@@ -1,6 +1,16 @@
-# Minimal New Tab
+<p align="center">
+  <img src="assets/icons/logo.png" width="160" alt="Minimal New Tab Logo">
+</p>
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+<h1 align="center">Minimal New Tab</h1>
+
+<p align="center">
+  A local-first, minimal and customizable new tab extension for Microsoft Edge.
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a>
+</p>
 
 Minimal New Tab is a local-first Microsoft Edge new-tab extension focused on a clean, user-controlled start page.
 

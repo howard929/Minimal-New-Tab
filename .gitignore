@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Archives / release artifacts
+*.zip
+*.crx
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+*~

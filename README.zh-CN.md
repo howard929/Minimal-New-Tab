@@ -1,6 +1,16 @@
-# Minimal New Tab
+<p align="center">
+  <img src="assets/icons/logo.png" width="160" alt="Minimal New Tab Logo">
+</p>
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+<h1 align="center">Minimal New Tab</h1>
+
+<p align="center">
+  一个本地优先、极简且可自定义的 Microsoft Edge 新标签页扩展。
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a>
+</p>
 
 Minimal New Tab 是一个以本地优先为核心的 Microsoft Edge 新标签页扩展，目标是提供干净、可控、不会自动塞入资讯或推荐内容的新标签页。
 

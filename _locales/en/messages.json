@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Minimal New Tab",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "A minimal, local-first Edge new tab with custom shortcuts, backgrounds, history suggestions, backup, and sync.",
+    "description": "Extension description"
+  }
+}

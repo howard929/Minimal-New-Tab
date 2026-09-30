@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Minimal New Tab",
+  "name": "__MSG_extensionName__",
   "version": "1.0.5",
-  "description": "A local-first minimal new tab page with custom shortcuts, backgrounds, optional local history suggestions, backup, and Edge account sync.",
+  "description": "__MSG_extensionDescription__",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
@@ -18,5 +18,6 @@
     "32": "assets/icons/icon-32.png",
     "48": "assets/icons/icon-48.png",
     "128": "assets/icons/icon-128.png"
-  }
+  },
+  "default_locale": "en"
 }

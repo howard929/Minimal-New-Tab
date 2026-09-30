@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>新标签页</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="backgroundLayer" class="background-layer" aria-hidden="true"></div>
+
+  <button id="settingsButton" class="icon-button top-right" type="button" aria-label="设置" title="设置">⚙</button>
+
+  <main class="page">
+    <section class="content" aria-label="新标签页">
+      <div id="searchArea" class="search-area">
+        <form id="searchForm" class="search-wrap" autocomplete="off">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            id="searchInput"
+            type="text"
+            inputmode="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="搜索或输入 Web 地址"
+            aria-label="搜索或输入 Web 地址"
+            aria-autocomplete="list"
+            aria-controls="suggestions"
+            aria-expanded="false"
+          />
+        </form>
+        <div id="suggestions" class="suggestions" role="listbox" hidden></div>
+      </div>
+
+      <div id="shortcuts" class="shortcuts" aria-label="快捷方式"></div>
+    </section>
+  </main>
+
+  <dialog id="shortcutDialog" class="dialog">
+    <form id="shortcutForm" method="dialog">
+      <div class="dialog-title" id="shortcutDialogTitle">添加快捷方式</div>
+
+      <label>
+        名称
+        <input id="shortcutName" maxlength="32" autocomplete="off" required />
+      </label>
+
+      <label>
+        网址
+        <input id="shortcutUrl" type="text" inputmode="url" autocomplete="off" placeholder="example.com" required />
+      </label>
+
+      <input id="shortcutId" type="hidden" />
+
+      <div class="dialog-actions">
+        <button class="text-button" value="cancel" type="button" id="cancelShortcut">取消</button>
+        <button class="primary-button" type="submit">完成</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" class="dialog settings-dialog">
+    <form method="dialog">
+      <div class="dialog-title">设置</div>
+
+      <section class="settings-section">
+        <div class="section-title">快捷方式</div>
+
+        <label>
+          快捷方式栏位
+          <select id="shortcutRows">
+            <option value="1">1 行 · 最多 8 个</option>
+            <option value="2">2 行 · 最多 16 个</option>
+            <option value="3">3 行 · 最多 24 个</option>
+          </select>
+        </label>
+
+        <div class="setting-help">
+          未加满时，“+ 添加快捷方式”占用下一个栏位；加满当前容量后不会自动新增下一行。
+        </div>
+
+        <label>
+          快捷方式尺寸
+          <select id="shortcutSize">
+            <option value="large">大</option>
+            <option value="small">小</option>
+          </select>
+        </label>
+
+        <div class="setting-help">
+          “大”保留当前图标与卡片尺寸并增加间距；“小”会整体缩小，但快捷方式之间仍保持更宽松的排版。
+        </div>
+        <label class="toggle-row">
+          <span>
+            <strong>显示网站图标</strong>
+            <small>使用浏览器自己的 favicon 数据，不调用第三方图标服务。</small>
+          </span>
+          <input id="useFavicons" type="checkbox" />
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>图标方框背景</strong>
+            <small>为每个快捷方式图标加一层半透明方框，复杂背景下更容易看清；如果背景较干净，可关闭此项，让 Logo 更清爽。</small>
+          </span>
+          <input id="iconBackground" type="checkbox" />
+        </label>
+      </section>
+
+      <section class="settings-section">
+        <div class="section-title">页面背景</div>
+
+        <div class="setting-label">常用颜色</div>
+        <div id="colorPresets" class="color-presets" aria-label="背景颜色储存位">
+          <button type="button" class="color-swatch" data-slot="0" title="颜色储存位 1" aria-label="颜色储存位 1"></button>
+          <button type="button" class="color-swatch" data-slot="1" title="颜色储存位 2" aria-label="颜色储存位 2"></button>
+          <button type="button" class="color-swatch" data-slot="2" title="颜色储存位 3" aria-label="颜色储存位 3"></button>
+          <button type="button" class="color-swatch" data-slot="3" title="颜色储存位 4" aria-label="颜色储存位 4"></button>
+          <button type="button" class="color-swatch" data-slot="4" title="颜色储存位 5" aria-label="颜色储存位 5"></button>
+          <button type="button" class="color-swatch" data-slot="5" title="颜色储存位 6" aria-label="颜色储存位 6"></button>
+        </div>
+
+        <div class="setting-help">
+          这 6 个圆圈是颜色储存位。先点一个储存位，再用下面的调色盘修改；颜色会自动保存在该位置。
+        </div>
+
+        <div class="custom-color-row">
+          <label class="compact-label" for="customColor">自定义颜色</label>
+          <input id="customColor" class="color-input" type="color" value="#202124" />
+          <span id="customColorValue" class="color-value">#202124</span>
+        </div>
+
+        <div class="background-image-row">
+          <div>
+            <div class="setting-label">自定义图片</div>
+            <div id="backgroundImageStatus" class="setting-help">未选择图片</div>
+          </div>
+          <div class="image-actions">
+            <input id="backgroundImageInput" type="file" accept="image/*" hidden />
+            <button id="chooseBackgroundImage" class="text-button bordered" type="button">选择图片</button>
+            <button id="removeBackgroundImage" class="text-button bordered" type="button">移除图片</button>
+          </div>
+        </div>
+
+        <div class="setting-help">
+          图片只保存在本机。使用图片背景时，点击搜索框会自动轻微变暗并进行毛玻璃模糊，退出搜索后恢复。
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <div class="section-title">搜索</div>
+
+        <label>
+          搜索框宽度
+          <select id="searchWidth">
+            <option value="narrow">窄 · 440px</option>
+            <option value="medium">中 · 560px</option>
+            <option value="wide">宽 · 680px</option>
+          </select>
+        </label>
+
+        <label>
+          搜索引擎
+          <select id="searchEngine">
+            <option value="bing">Bing</option>
+            <option value="google">Google</option>
+            <option value="baidu">百度</option>
+          </select>
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>新标签页自动聚焦搜索框</strong>
+            <small>打开新标签页后可直接输入。</small>
+          </span>
+          <input id="autoFocus" type="checkbox" />
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>浏览历史智能建议</strong>
+            <small>开启后才会请求“读取浏览历史”权限；关闭时不读取历史记录。</small>
+          </span>
+          <input id="historySuggestions" type="checkbox" />
+        </label>
+
+        <label>
+          历史建议条数
+          <select id="historySuggestionLimit">
+            <option value="5">5 条</option>
+            <option value="10">10 条</option>
+            <option value="15">15 条</option>
+            <option value="20">20 条</option>
+          </select>
+        </label>
+
+        <div class="setting-help">
+          开启后：搜索框为空时显示近期访问；输入文字时优先匹配以前访问或经常手动输入的网址。此功能只查询 Edge 本机浏览历史，不向搜索引擎发送联想请求。
+        </div>
+
+        <div class="permission-row">
+          <div id="historyPermissionStatus" class="setting-help">本机权限状态：未检查</div>
+          <button id="grantHistoryPermission" class="text-button bordered compact-action" type="button" hidden>在本机授权</button>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <div class="section-title">备份与同步</div>
+
+        <div class="backup-row">
+          <div>
+            <div class="setting-label">导入 / 导出配置</div>
+            <div class="setting-help">导出文件包含快捷方式、设置以及本地背景图片，适合迁移到另一台电脑。</div>
+          </div>
+          <div class="image-actions">
+            <input id="importConfigInput" type="file" accept="application/json,.json" hidden />
+            <button id="importConfig" class="text-button bordered" type="button">导入</button>
+            <button id="exportConfig" class="text-button bordered" type="button">导出</button>
+          </div>
+        </div>
+
+        <label class="toggle-row sync-toggle-row">
+          <span>
+            <strong>Edge 账户同步</strong>
+            <small>同步快捷方式和除本地背景图片、设备权限之外的设置。</small>
+          </span>
+          <input id="edgeSync" type="checkbox" />
+        </label>
+        <div id="syncStatus" class="setting-help">未开启</div>
+        <div class="setting-help">
+          从 Microsoft Edge Add-ons 安装后，同一扩展会保持固定 ID；在其他电脑使用同一 Edge 账户时，可同步本扩展配置。开发人员模式加载时，不同电脑的扩展 ID 仍可能不同。
+        </div>
+      </section>
+
+      <div class="settings-note">
+        核心页面仍为本地页面。背景图片始终只保存在本机；“浏览历史智能建议”是可选权限，权限不会跨设备同步，只有用户在当前设备主动授权后才会读取本机历史。
+      </div>
+
+      <div class="dialog-actions split">
+        <button id="resetData" class="danger-button" type="button">清除本地数据</button>
+        <button id="closeSettings" class="primary-button" type="button">完成</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="tileMenu" class="tile-menu" hidden>
+    <button id="editShortcut" type="button">编辑</button>
+    <button id="removeShortcut" type="button">删除</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

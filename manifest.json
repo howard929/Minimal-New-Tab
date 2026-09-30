@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Minimal New Tab",
+  "version": "1.0.5",
+  "description": "A local-first minimal new tab page with custom shortcuts, backgrounds, optional local history suggestions, backup, and Edge account sync.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": [
+    "favicon",
+    "storage"
+  ],
+  "optional_permissions": [
+    "history"
+  ]
+}

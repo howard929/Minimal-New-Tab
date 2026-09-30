@@ -1,0 +1,532 @@
+:root {
+  --page-bg: #202124;
+  --page-text: #f1f3f4;
+  --page-muted: #c4c7c5;
+  --surface: rgba(48, 49, 52, 0.96);
+  --surface-hover: rgba(58, 59, 61, 0.98);
+  --accent: #8ab4f8;
+  --danger: #f28b82;
+  /* Large shortcut preset (default / current visual size). */
+  --tile-size: 58px;
+  --tile-width: 112px;
+  --tile-gap-x: 10px;
+  --tile-gap-y: 14px;
+  --tile-min-height: var(--tile-min-height);
+  --favicon-size: 32px;
+  --add-icon-size: 32px;
+  --label-max-width: 100px;
+  --label-font-size: 12px;
+  --icon-radius: 16px;
+  --shortcuts-max-width: 966px;
+  --search-max-width: 680px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  color: var(--page-text);
+  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+}
+
+button, input, select { font: inherit; }
+
+.background-layer {
+  position: fixed;
+  inset: -2.5%;
+  z-index: -2;
+  background: var(--page-bg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transition: filter .24s ease, transform .24s ease, background-color .16s ease;
+  transform: scale(1);
+}
+
+.background-layer.with-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.10);
+  pointer-events: none;
+}
+
+body.image-background.search-active .background-layer {
+  filter: blur(14px) brightness(.72);
+  transform: scale(1.035);
+}
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 72px 24px;
+}
+
+.content {
+  width: min(1000px, calc(100vw - 48px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+
+.search-area {
+  position: relative;
+  width: min(var(--search-max-width), 100%);
+  z-index: 20;
+}
+
+.search-wrap {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+  backdrop-filter: blur(10px);
+}
+
+.search-wrap:hover { background: var(--surface-hover); }
+
+.search-wrap:focus-within {
+  border-color: #5f6368;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.34);
+}
+
+.search-icon {
+  font-size: 22px;
+  color: #c3c7ca;
+  line-height: 1;
+  transform: translateY(-1px);
+  user-select: none;
+}
+
+#searchInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #f1f3f4;
+  font-size: 16px;
+}
+
+#searchInput::placeholder { color: #c0c4c7; opacity: .96; }
+
+.suggestions {
+  position: absolute;
+  top: 54px;
+  left: 0;
+  right: 0;
+  max-height: min(420px, calc(100vh - 180px));
+  overflow: auto;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 15px;
+  background: rgba(41, 42, 45, 0.98);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(16px);
+}
+
+.suggestion-item {
+  width: 100%;
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #f1f3f4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active { background: rgba(255, 255, 255, 0.08); }
+
+.suggestion-favicon-wrap {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+}
+
+.suggestion-favicon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.suggestion-text { min-width: 0; }
+.suggestion-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.suggestion-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+  color: #aeb3b7;
+  font-size: 11px;
+}
+
+
+/* Small shortcut preset.
+   The whole shortcut is reduced, but spacing is deliberately kept generous. */
+body.shortcut-size-small {
+  --tile-size: 48px;
+  --tile-width: 100px;
+  --tile-gap-x: 12px;
+  --tile-gap-y: 14px;
+  --tile-min-height: 82px;
+  --favicon-size: 26px;
+  --add-icon-size: 26px;
+  --label-max-width: 88px;
+  --label-font-size: 11px;
+  --icon-radius: 14px;
+  --shortcuts-max-width: 884px;
+}
+
+body.shortcut-size-large {
+  --tile-size: 58px;
+  --tile-width: 112px;
+  --tile-gap-x: 10px;
+  --tile-gap-y: 14px;
+  --tile-min-height: 94px;
+  --favicon-size: 32px;
+  --add-icon-size: 32px;
+  --label-max-width: 100px;
+  --label-font-size: 12px;
+  --icon-radius: 16px;
+  --shortcuts-max-width: 966px;
+}
+
+.shortcuts {
+  width: min(var(--shortcuts-max-width), 100%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: var(--tile-gap-y) var(--tile-gap-x);
+}
+
+.shortcut {
+  position: relative;
+  flex: 0 0 var(--tile-width);
+  width: var(--tile-width);
+  height: var(--tile-min-height);
+  min-height: var(--tile-min-height);
+  padding: 0 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--page-text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+  transition: background .12s ease, opacity .12s ease, transform .16s ease;
+  will-change: transform;
+}
+
+.shortcut:hover,
+.shortcut:focus-visible { outline: none; background: rgba(255, 255, 255, 0.08); }
+body.light-page .shortcut:hover,
+body.light-page .shortcut:focus-visible { background: rgba(0, 0, 0, 0.06); }
+
+.shortcut[draggable="true"] { cursor: pointer; }
+.shortcut[draggable="true"]:active { cursor: pointer; }
+.shortcut.dragging { opacity: .34; transform: scale(.96); z-index: 2; }
+
+.tile-icon {
+  width: var(--tile-size);
+  height: var(--tile-size);
+  flex: 0 0 var(--tile-size);
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--icon-radius);
+  color: var(--page-text);
+  user-select: none;
+  overflow: visible;
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    box-shadow .15s ease,
+    backdrop-filter .15s ease;
+}
+
+/* v0.4.3
+   All shortcuts — including “+ 添加快捷方式” — always keep the exact same
+   58px outer icon slot. This guarantees identical vertical alignment whether
+   the optional background box is enabled or disabled. */
+body.icon-background-enabled .shortcut .tile-icon {
+  background: rgba(44, 45, 47, 0.84);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(8px);
+}
+
+body.light-page:not(.image-background).icon-background-enabled .shortcut .tile-icon {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(0, 0, 0, 0.10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Website favicon size remains fixed at 32px to avoid upscaling blur. */
+.tile-favicon {
+  width: var(--favicon-size);
+  height: var(--favicon-size);
+  object-fit: contain;
+  display: block;
+}
+
+.tile-fallback {
+  width: var(--favicon-size);
+  height: var(--favicon-size);
+  display: grid;
+  place-items: center;
+  font-size: 23px;
+  font-weight: 600;
+}
+
+/* The Add shortcut uses the same 58px outer slot.
+   Its visible plus is drawn inside a centered 32px inner area, but that inner
+   area never changes the outer layout, so labels remain perfectly aligned. */
+.shortcut.add .tile-icon {
+  width: var(--tile-size);
+  height: var(--tile-size);
+}
+
+.add-icon-box {
+  position: relative;
+  width: var(--add-icon-size);
+  height: var(--add-icon-size);
+  color: var(--page-text);
+}
+
+.add-icon-box::before,
+.add-icon-box::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 999px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.add-icon-box::before {
+  width: 15px;
+  height: 1.5px;
+}
+
+.add-icon-box::after {
+  width: 1.5px;
+  height: 15px;
+}
+
+.tile-label {
+  max-width: var(--label-max-width);
+  font-size: var(--label-font-size);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+body.light-page:not(.image-background) .tile-label { text-shadow: none; }
+
+.tile-more {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--page-text);
+  opacity: 0;
+  cursor: pointer;
+  line-height: 1;
+}
+.tile-more::before {
+  content: "";
+  width: 2.4px;
+  height: 2.4px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 -4.2px 0 currentColor, 0 4.2px 0 currentColor;
+}
+.shortcut:hover .tile-more,
+.shortcut:focus-within .tile-more { opacity: 1; }
+.tile-more:hover { background: rgba(255, 255, 255, 0.12); }
+body.light-page .tile-more:hover { background: rgba(0, 0, 0, 0.08); }
+
+.icon-button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--page-text);
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+body.light-page:not(.image-background) .icon-button { text-shadow: none; }
+.icon-button:hover { background: rgba(255, 255, 255, 0.10); }
+body.light-page .icon-button:hover { background: rgba(0, 0, 0, 0.07); }
+.top-right { position: fixed; top: 22px; right: 24px; }
+
+.dialog {
+  width: min(440px, calc(100vw - 36px));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #4a4d50;
+  border-radius: 14px;
+  background: #292a2d;
+  color: #f1f3f4;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.45);
+}
+.settings-dialog { width: min(540px, calc(100vw - 36px)); }
+.dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+.dialog form {
+  padding: 22px;
+  max-height: min(800px, calc(100vh - 40px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+.dialog-title { margin-bottom: 18px; font-size: 20px; font-weight: 600; }
+.dialog label { display: grid; gap: 7px; margin: 15px 0; color: #d8dcdf; font-size: 13px; }
+.dialog input[type="text"],
+.dialog input:not([type]),
+.dialog select {
+  width: 100%; height: 42px; padding: 0 12px;
+  border: 1px solid #55585c; border-radius: 8px; outline: 0;
+  background: #202124; color: #f1f3f4;
+}
+.dialog input:focus,
+.dialog select:focus { border-color: var(--accent); }
+
+.settings-section { padding: 15px 0 17px; border-top: 1px solid #414347; }
+.settings-section:first-of-type { border-top: 0; padding-top: 0; }
+.section-title { margin-bottom: 12px; font-size: 14px; font-weight: 650; color: #f1f3f4; }
+.setting-label { color: #d8dcdf; font-size: 13px; }
+.setting-help { color: #9fa4a8; font-size: 12px; line-height: 1.55; }
+
+.color-presets { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 12px; }
+.color-swatch {
+  width: 34px; height: 34px; padding: 0; border: 2px solid rgba(255,255,255,.18);
+  border-radius: 50%; cursor: pointer; position: relative; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+}
+.color-swatch.active::after {
+  content: ""; position: absolute; inset: -5px; border: 2px solid #8ab4f8; border-radius: 50%;
+}
+.custom-color-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; margin: 10px 0 18px; }
+.compact-label { margin: 0 !important; }
+.color-input { width: 42px; height: 34px; padding: 2px; border: 1px solid #55585c; border-radius: 7px; background: #202124; cursor: pointer; }
+.color-value { width: 70px; color: #bfc4c7; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.background-image-row,
+.backup-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; margin-top: 8px; }
+.image-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.toggle-row { grid-template-columns: 1fr auto !important; align-items: center; gap: 18px !important; }
+.toggle-row span { display: grid; gap: 4px; }
+.toggle-row small { color: #aeb3b7; }
+.toggle-row input { width: 18px; height: 18px; }
+.sync-toggle-row { margin-bottom: 8px !important; }
+
+.dialog-actions { margin-top: 22px; display: flex; justify-content: flex-end; gap: 10px; }
+.dialog-actions.split { justify-content: space-between; }
+.text-button,
+.primary-button,
+.danger-button { min-height: 38px; padding: 0 14px; border-radius: 8px; cursor: pointer; }
+.text-button { border: 1px solid transparent; background: transparent; color: #d8dcdf; }
+.text-button.bordered { border-color: #55585c; }
+.text-button:hover { background: rgba(255, 255, 255, 0.07); }
+.primary-button { border: 1px solid #6f9fe5; background: #315f9f; color: #fff; }
+.primary-button:hover { background: #396cb4; }
+.danger-button { border: 1px solid #75504d; background: transparent; color: var(--danger); }
+.danger-button:hover { background: rgba(242, 139, 130, 0.08); }
+button:disabled { opacity: .45; cursor: default; }
+
+
+.permission-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.compact-action {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.settings-note {
+  margin-top: 18px; padding: 12px 13px; border: 1px solid #45484b; border-radius: 9px;
+  color: #aeb3b7; font-size: 12px; line-height: 1.6;
+}
+
+.tile-menu {
+  position: fixed; z-index: 100; min-width: 116px; padding: 6px;
+  border: 1px solid #4a4d50; border-radius: 9px; background: #292a2d;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.40);
+}
+.tile-menu button {
+  width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: 6px;
+  background: transparent; color: #f1f3f4; text-align: left; cursor: pointer;
+}
+.tile-menu button:hover { background: rgba(255, 255, 255, 0.08); }
+#removeShortcut { color: var(--danger); }
+
+@media (max-width: 760px) {
+  .shortcuts { width: 100%; }
+  .background-image-row,
+  .backup-row { grid-template-columns: 1fr; }
+  .image-actions { justify-content: flex-start; }
+}
+
+
+body.shortcut-size-small .add-icon-box::before {
+  width: 13px;
+}
+body.shortcut-size-small .add-icon-box::after {
+  height: 13px;
+}

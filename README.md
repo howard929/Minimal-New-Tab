@@ -70,7 +70,7 @@ If the history-suggestions preference arrives on another device, the user must s
 
 ### Microsoft Edge Add-ons
 
-The public store link will be added here after the extension is published.
+https://microsoftedge.microsoft.com/addons/detail/fgejaglaacjamciigocobflljmeifiad
 
 ### Developer mode
 

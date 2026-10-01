@@ -1,0 +1,11 @@
+Minimal New Tab v1.1.0 - second focus-race fix
+
+This package keeps the version at 1.1.0.
+
+Additional fix:
+- Removed delayed setTimeout-based new-tab auto-focus.
+- Auto-focus now happens synchronously and remains visually suppressed through the next animation frame.
+- Clicking outside the search area immediately clears the blur/zoom visual state.
+- Search blur now removes the effect immediately instead of waiting 120 ms.
+
+The Search focus background effect setting remains enabled by default and still syncs/backups normally.

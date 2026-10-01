@@ -57,7 +57,7 @@ button, input, select { font: inherit; }
   pointer-events: none;
 }
 
-body.image-background.search-active .background-layer {
+body.search-focus-effect-enabled.image-background.search-active .background-layer {
   filter: blur(14px) brightness(.72);
   transform: scale(1.035);
 }

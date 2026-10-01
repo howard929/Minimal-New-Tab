@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   backgroundMode: "minimalNewTab.backgroundMode",
   iconSize: "minimalNewTab.iconSize",
   searchWidth: "minimalNewTab.searchWidth",
+  searchFocusEffect: "minimalNewTab.searchFocusEffect",
   historySuggestions: "minimalNewTab.historySuggestions",
   historyLimit: "minimalNewTab.historyLimit",
   syncPreference: "minimalNewTab.syncPreference",
@@ -29,6 +30,7 @@ const DEFAULTS = {
   backgroundMode: "color",
   iconSize: "small",
   searchWidth: "wide",
+  searchFocusEffect: true,
   historySuggestions: false,
   historyLimit: 10,
   paletteColors: ["#000000", "#202124", "#5f6368", "#e8eaed", "#ffffff", "#87ceeb"],
@@ -85,6 +87,7 @@ const iconBackground = document.getElementById("iconBackground");
 const shortcutRows = document.getElementById("shortcutRows");
 const shortcutSize = document.getElementById("shortcutSize");
 const searchWidth = document.getElementById("searchWidth");
+const searchFocusEffect = document.getElementById("searchFocusEffect");
 const historySuggestions = document.getElementById("historySuggestions");
 const historySuggestionLimit = document.getElementById("historySuggestionLimit");
 const historyPermissionStatus = document.getElementById("historyPermissionStatus");
@@ -118,6 +121,7 @@ let activeSuggestionIndex = -1;
 let suggestionQuerySerial = 0;
 let syncTimer = null;
 let applyingRemoteSync = false;
+let suppressSearchFocusVisual = false;
 
 function loadJSON(key, fallback) {
   try {
@@ -155,6 +159,7 @@ function getAutoFocus() { return getBool(STORAGE_KEYS.autoFocus, DEFAULTS.autoFo
 function getUseFavicons() { return getBool(STORAGE_KEYS.useFavicons, DEFAULTS.useFavicons); }
 function getIconBackground() { return getBool(STORAGE_KEYS.iconBackground, DEFAULTS.iconBackground); }
 function getHistorySuggestionsEnabled() { return getBool(STORAGE_KEYS.historySuggestions, DEFAULTS.historySuggestions); }
+function getSearchFocusEffect() { return getBool(STORAGE_KEYS.searchFocusEffect, DEFAULTS.searchFocusEffect); }
 
 function getShortcutRows() {
   const value = Number(localStorage.getItem(STORAGE_KEYS.shortcutRows) || DEFAULTS.shortcutRows);
@@ -266,6 +271,8 @@ function applyUiSettings() {
   localStorage.setItem(STORAGE_KEYS.iconSize, "small");
   document.body.classList.remove("icon-size-small", "icon-size-large");
   document.body.classList.toggle("icon-background-enabled", getIconBackground());
+  document.body.classList.toggle("search-focus-effect-enabled", getSearchFocusEffect());
+  if (!getSearchFocusEffect()) document.body.classList.remove("search-active");
 
   const size = getShortcutSize();
   document.body.classList.toggle("shortcut-size-small", size === "small");
@@ -795,17 +802,40 @@ async function refreshSuggestions() {
   }
 }
 
+function setSearchFocusVisual(active) {
+  const enabled = getSearchFocusEffect();
+  document.body.classList.toggle("search-active", Boolean(active) && enabled);
+}
+
+// Only explicit interaction with the search box should start the background
+// effect. Clicking elsewhere must never be able to arm or briefly flash it.
+searchInput.addEventListener("pointerdown", () => {
+  setSearchFocusVisual(true);
+});
+
+// Keyboard focus (for example Tab) can still use the effect, but programmatic
+// auto-focus is suppressed separately.
 searchInput.addEventListener("focus", () => {
-  document.body.classList.add("search-active");
+  if (!suppressSearchFocusVisual) setSearchFocusVisual(true);
   refreshSuggestions();
 });
 
+// Hide the effect immediately on blur. Suggestion rows already prevent the
+// input from losing focus on mousedown, so the previous delay is unnecessary
+// and could make a one-frame focus race visible as a blur/zoom flash.
 searchInput.addEventListener("blur", () => {
-  setTimeout(() => {
-    document.body.classList.remove("search-active");
-    hideSuggestions();
-  }, 120);
+  setSearchFocusVisual(false);
+  hideSuggestions();
 });
+
+// Defensive guard: when the user presses/clicks anywhere outside the search
+// area, force the visual state off before the browser performs its focus
+// change. This prevents an initial auto-focus race from becoming visible.
+document.addEventListener("pointerdown", event => {
+  if (!searchArea.contains(event.target)) {
+    setSearchFocusVisual(false);
+  }
+}, true);
 
 searchInput.addEventListener("input", refreshSuggestions);
 searchInput.addEventListener("keydown", event => {
@@ -848,6 +878,7 @@ function getSyncableSettings() {
     paletteColors: getPaletteColors(),
     paletteIndex: getPaletteIndex(),
     searchWidth: getSearchWidth(),
+    searchFocusEffect: getSearchFocusEffect(),
     historySuggestions: getHistorySuggestionsEnabled(),
     historyLimit: getHistoryLimit()
   };
@@ -921,6 +952,10 @@ function applySyncableConfig(config) {
 
   if (["narrow", "medium", "wide"].includes(config.searchWidth)) {
     localStorage.setItem(STORAGE_KEYS.searchWidth, config.searchWidth);
+  }
+
+  if (typeof config.searchFocusEffect === "boolean") {
+    localStorage.setItem(STORAGE_KEYS.searchFocusEffect, String(config.searchFocusEffect));
   }
 
   if (typeof config.historySuggestions === "boolean") {
@@ -1167,6 +1202,7 @@ function getExportConfig() {
     paletteColors: getPaletteColors(),
     paletteIndex: getPaletteIndex(),
     searchWidth: getSearchWidth(),
+    searchFocusEffect: getSearchFocusEffect(),
     historySuggestions: getHistorySuggestionsEnabled(),
     historyLimit: getHistoryLimit()
   };
@@ -1237,6 +1273,7 @@ async function importBackupFile(file) {
 
   localStorage.setItem(STORAGE_KEYS.iconSize, "small");
   if (["narrow", "medium", "wide"].includes(config.searchWidth)) localStorage.setItem(STORAGE_KEYS.searchWidth, config.searchWidth);
+  if (typeof config.searchFocusEffect === "boolean") localStorage.setItem(STORAGE_KEYS.searchFocusEffect, String(config.searchFocusEffect));
   if (typeof config.historySuggestions === "boolean") localStorage.setItem(STORAGE_KEYS.historySuggestions, String(config.historySuggestions));
   if ([5, 10, 15, 20].includes(Number(config.historyLimit))) localStorage.setItem(STORAGE_KEYS.historyLimit, String(Number(config.historyLimit)));
 
@@ -1264,6 +1301,7 @@ settingsButton.addEventListener("click", async () => {
   shortcutRows.value = String(getShortcutRows());
   shortcutSize.value = getShortcutSize();
   searchWidth.value = getSearchWidth();
+  searchFocusEffect.checked = getSearchFocusEffect();
   historySuggestionLimit.value = String(getHistoryLimit());
   historySuggestions.checked = getHistorySuggestionsEnabled();
   await updateHistoryPermissionUi();
@@ -1298,6 +1336,15 @@ iconBackground.addEventListener("change", () => {
 searchWidth.addEventListener("change", () => {
   localStorage.setItem(STORAGE_KEYS.searchWidth, searchWidth.value);
   applyUiSettings();
+  queueSync();
+});
+
+searchFocusEffect.addEventListener("change", () => {
+  localStorage.setItem(STORAGE_KEYS.searchFocusEffect, String(searchFocusEffect.checked));
+  applyUiSettings();
+  if (searchFocusEffect.checked && document.activeElement === searchInput) {
+    setSearchFocusVisual(true);
+  }
   queueSync();
 });
 
@@ -1487,6 +1534,7 @@ resetData.addEventListener("click", async () => {
   shortcutRows.value = String(DEFAULTS.shortcutRows);
   shortcutSize.value = DEFAULTS.shortcutSize;
   searchWidth.value = DEFAULTS.searchWidth;
+  searchFocusEffect.checked = DEFAULTS.searchFocusEffect;
   historySuggestionLimit.value = String(DEFAULTS.historyLimit);
   historySuggestions.checked = false;
   await updateHistoryPermissionUi();
@@ -1500,4 +1548,22 @@ applyBackground();
 updateHistoryPermissionUi();
 bootstrapSync();
 
-if (getAutoFocus()) setTimeout(() => searchInput.focus(), 0);
+if (getAutoFocus()) {
+  // Focus synchronously during initialization instead of using setTimeout().
+  // The delayed focus could race with the user's first click on the page:
+  // the input could briefly gain focus (showing the caret) and immediately
+  // lose it again, making the blur/zoom transition flash once.
+  suppressSearchFocusVisual = true;
+  try {
+    searchInput.focus({ preventScroll: true });
+  } catch {
+    searchInput.focus();
+  }
+
+  // Keep suppression active through the next animation frame as an additional
+  // guard against any browser-delayed focus event.
+  requestAnimationFrame(() => {
+    suppressSearchFocusVisual = false;
+    setSearchFocusVisual(false);
+  });
+}

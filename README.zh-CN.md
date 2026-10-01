@@ -70,7 +70,7 @@ Minimal New Tab 不包含广告、第三方分析，也没有作者自建遥测�
 
 ### Microsoft Edge Add-ons
 
-正式上架后，会在这里补充商店链接。
+https://microsoftedge.microsoft.com/addons/detail/fgejaglaacjamciigocobflljmeifiad
 
 ### 开发人员模式
 

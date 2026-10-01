@@ -1,0 +1,10 @@
+Minimal New Tab v1.2.0
+
+Major layout update:
+- Standard / Desktop layout modes.
+- Optional middle search box in Standard mode (enabled by default).
+- Desktop mode anchors shortcuts at the bottom center and keeps normal top-to-bottom row order.
+- Search-only settings are hidden when the middle search box is unavailable.
+- Layout/search visibility sync and backup support.
+- Centered SVG settings icon.
+- No new permissions.

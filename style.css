@@ -78,6 +78,35 @@ body.search-focus-effect-enabled.image-background.search-active .background-laye
   gap: 28px;
 }
 
+/* v1.2.0 layout modes */
+body.layout-standard.search-hidden .page {
+  place-items: center;
+}
+
+body.layout-standard.search-hidden .content {
+  justify-content: center;
+}
+
+body.layout-desktop .page {
+  place-items: end center;
+  padding: 72px 24px 38px;
+}
+
+body.layout-desktop .content {
+  width: min(1000px, calc(100vw - 48px));
+  justify-content: flex-end;
+  gap: 0;
+}
+
+body.layout-desktop .shortcuts {
+  align-content: flex-end;
+}
+
+/* Explicitly hide the search area whenever the selected layout does not use it. */
+body.search-hidden .search-area {
+  display: none !important;
+}
+
 .search-area {
   position: relative;
   width: min(var(--search-max-width), 100%);
@@ -171,6 +200,17 @@ body.search-focus-effect-enabled.image-background.search-active .background-laye
   width: 22px;
   height: 22px;
   object-fit: contain;
+}
+
+.suggestion-search-mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: #d5d8da;
+  font-size: 22px;
+  line-height: 1;
+  user-select: none;
 }
 
 .suggestion-text { min-width: 0; }
@@ -395,17 +435,27 @@ body.light-page .tile-more:hover { background: rgba(0, 0, 0, 0.08); }
 .icon-button {
   width: 38px;
   height: 38px;
+  padding: 0;
   border: 0;
   border-radius: 50%;
   color: var(--page-text);
   background: transparent;
   cursor: pointer;
-  font-size: 20px;
   display: grid;
   place-items: center;
-  text-shadow: 0 1px 2px rgba(0,0,0,.35);
 }
-body.light-page:not(.image-background) .icon-button { text-shadow: none; }
+.settings-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
 .icon-button:hover { background: rgba(255, 255, 255, 0.10); }
 body.light-page .icon-button:hover { background: rgba(0, 0, 0, 0.07); }
 .top-right { position: fixed; top: 22px; right: 24px; }
@@ -442,6 +492,7 @@ body.light-page .icon-button:hover { background: rgba(0, 0, 0, 0.07); }
 .dialog select:focus { border-color: var(--accent); }
 
 .settings-section { padding: 15px 0 17px; border-top: 1px solid #414347; }
+.settings-section[hidden], #showSearchRow[hidden], #searchFocusEffectGroup[hidden] { display: none !important; }
 .settings-section:first-of-type { border-top: 0; padding-top: 0; }
 .section-title { margin-bottom: 12px; font-size: 14px; font-weight: 650; color: #f1f3f4; }
 .setting-label { color: #d8dcdf; font-size: 13px; }
@@ -521,6 +572,7 @@ button:disabled { opacity: .45; cursor: default; }
   .background-image-row,
   .backup-row { grid-template-columns: 1fr; }
   .image-actions { justify-content: flex-start; }
+  body.layout-desktop .page { padding: 72px 16px 24px; }
 }
 
 

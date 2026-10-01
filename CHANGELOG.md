@@ -4,6 +4,25 @@
 
 All notable changes to Minimal New Tab are documented here.
 
+## 1.2.0 — 2026-10-02
+
+- Added a Standard / Desktop layout mode selector.
+- Added an option to hide the middle search box in Standard mode; shortcuts automatically remain centered when the search box is hidden.
+- Added Desktop mode: the middle search box is hidden and shortcuts are anchored to the bottom center of the page, with up to 8 shortcuts per row and up to 3 rows. Row order remains top-to-bottom so the first row always stays above later rows.
+- Search-only settings are automatically hidden whenever the active layout does not use the middle search box.
+- Layout mode and search-box visibility are included in Edge sync and JSON import/export.
+- Replaced the text gear glyph with a centered SVG settings icon for consistent hover alignment.
+- No new permissions were added.
+
+## 1.1.1 — 2026-10-02
+
+- History suggestions no longer appear when the search box is focused but empty.
+- Suggestions now appear only after typing.
+- Improved local history ranking to prioritize stronger hostname, URL, and title matches.
+- Added a current-search-engine action among suggestions.
+- Added locally derived root-domain candidates to feel closer to Edge's address-bar suggestion layout.
+- No new permissions were added.
+
 ## 1.1.0 — 2026-10-01
 
 - Fixed the new-tab background blur/zoom flicker when clicking the empty page area by removing the delayed auto-focus race and clearing the visual state immediately on outside clicks.

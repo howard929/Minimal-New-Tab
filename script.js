@@ -11,6 +11,8 @@ const STORAGE_KEYS = {
   iconSize: "minimalNewTab.iconSize",
   searchWidth: "minimalNewTab.searchWidth",
   searchFocusEffect: "minimalNewTab.searchFocusEffect",
+  layoutMode: "minimalNewTab.layoutMode",
+  showSearch: "minimalNewTab.showSearch",
   historySuggestions: "minimalNewTab.historySuggestions",
   historyLimit: "minimalNewTab.historyLimit",
   syncPreference: "minimalNewTab.syncPreference",
@@ -31,6 +33,8 @@ const DEFAULTS = {
   iconSize: "small",
   searchWidth: "wide",
   searchFocusEffect: true,
+  layoutMode: "standard",
+  showSearch: true,
   historySuggestions: false,
   historyLimit: 10,
   paletteColors: ["#000000", "#202124", "#5f6368", "#e8eaed", "#ffffff", "#87ceeb"],
@@ -63,6 +67,12 @@ const searchUrls = {
   baidu: query => `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`
 };
 
+const searchEngineNames = {
+  bing: "Bing",
+  google: "Google",
+  baidu: "百度"
+};
+
 const backgroundLayer = document.getElementById("backgroundLayer");
 const shortcutsEl = document.getElementById("shortcuts");
 const searchArea = document.getElementById("searchArea");
@@ -80,6 +90,11 @@ const cancelShortcut = document.getElementById("cancelShortcut");
 
 const settingsButton = document.getElementById("settingsButton");
 const settingsDialog = document.getElementById("settingsDialog");
+const layoutMode = document.getElementById("layoutMode");
+const showSearch = document.getElementById("showSearch");
+const showSearchRow = document.getElementById("showSearchRow");
+const searchSettingsSection = document.getElementById("searchSettingsSection");
+const searchFocusEffectGroup = document.getElementById("searchFocusEffectGroup");
 const searchEngine = document.getElementById("searchEngine");
 const autoFocus = document.getElementById("autoFocus");
 const useFavicons = document.getElementById("useFavicons");
@@ -160,6 +175,14 @@ function getUseFavicons() { return getBool(STORAGE_KEYS.useFavicons, DEFAULTS.us
 function getIconBackground() { return getBool(STORAGE_KEYS.iconBackground, DEFAULTS.iconBackground); }
 function getHistorySuggestionsEnabled() { return getBool(STORAGE_KEYS.historySuggestions, DEFAULTS.historySuggestions); }
 function getSearchFocusEffect() { return getBool(STORAGE_KEYS.searchFocusEffect, DEFAULTS.searchFocusEffect); }
+function getShowSearch() { return getBool(STORAGE_KEYS.showSearch, DEFAULTS.showSearch); }
+function getLayoutMode() {
+  const value = localStorage.getItem(STORAGE_KEYS.layoutMode) || DEFAULTS.layoutMode;
+  return ["standard", "desktop"].includes(value) ? value : DEFAULTS.layoutMode;
+}
+function isSearchVisible() {
+  return getLayoutMode() === "standard" && getShowSearch();
+}
 
 function getShortcutRows() {
   const value = Number(localStorage.getItem(STORAGE_KEYS.shortcutRows) || DEFAULTS.shortcutRows);
@@ -265,6 +288,18 @@ function applyPageContrast(color, forceImageMode = false) {
   document.documentElement.style.setProperty("--page-muted", light ? "#5f6368" : "#c4c7c5");
 }
 
+function updateConditionalSettingsUi() {
+  const mode = getLayoutMode();
+  const searchVisible = isSearchVisible();
+
+  // Desktop mode never uses the middle search box, so the toggle itself is not
+  // relevant there. When the middle search box is hidden, all search-only
+  // settings are hidden as well to avoid presenting controls that do nothing.
+  showSearchRow.hidden = mode === "desktop";
+  searchSettingsSection.hidden = !searchVisible;
+  searchFocusEffectGroup.hidden = !searchVisible;
+}
+
 function applyUiSettings() {
   // Legacy favicon-size setting remains normalized; shortcut card size is now
   // controlled separately by the small / large preset.
@@ -272,13 +307,28 @@ function applyUiSettings() {
   document.body.classList.remove("icon-size-small", "icon-size-large");
   document.body.classList.toggle("icon-background-enabled", getIconBackground());
   document.body.classList.toggle("search-focus-effect-enabled", getSearchFocusEffect());
-  if (!getSearchFocusEffect()) document.body.classList.remove("search-active");
+
+  const mode = getLayoutMode();
+  const searchVisible = isSearchVisible();
+  document.body.classList.toggle("layout-standard", mode === "standard");
+  document.body.classList.toggle("layout-desktop", mode === "desktop");
+  document.body.classList.toggle("search-hidden", !searchVisible);
+  searchArea.hidden = !searchVisible;
+
+  if (!searchVisible || !getSearchFocusEffect()) {
+    document.body.classList.remove("search-active");
+  }
+  if (!searchVisible) {
+    hideSuggestions();
+    if (document.activeElement === searchInput) searchInput.blur();
+  }
 
   const size = getShortcutSize();
   document.body.classList.toggle("shortcut-size-small", size === "small");
   document.body.classList.toggle("shortcut-size-large", size === "large");
 
   document.documentElement.style.setProperty("--search-max-width", SEARCH_WIDTHS[getSearchWidth()] || SEARCH_WIDTHS.wide);
+  updateConditionalSettingsUi();
 }
 
 function updateColorControls(color) {
@@ -698,46 +748,137 @@ async function getHistorySuggestions(query, limit) {
   const permitted = await historyPermissionContains();
   if (!permitted || !getHistorySuggestionsEnabled()) return [];
 
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
   const raw = await chrome.history.search({
-    text: query.trim(),
+    text: q,
     startTime: 0,
-    maxResults: Math.max(100, limit * 12)
+    maxResults: Math.max(240, limit * 40)
   });
 
   const now = Date.now();
-  const q = query.trim().toLowerCase();
+  const ranked = [];
+  const seenUrls = new Set();
 
-  return raw
-    .filter(item => item.url && /^https?:\/\//i.test(item.url))
-    .map(item => {
-      let host = "";
-      try { host = new URL(item.url).hostname.replace(/^www\./, ""); } catch {}
-      const title = item.title || host || item.url;
-      const urlLower = item.url.toLowerCase();
-      const hostLower = host.toLowerCase();
-      const titleLower = title.toLowerCase();
-      const typed = item.typedCount || 0;
-      const visits = item.visitCount || 0;
-      const ageHours = Math.max(0, (now - (item.lastVisitTime || 0)) / 3600000);
-      const recency = Math.max(0, 120 - Math.log2(ageHours + 1) * 12);
+  for (const item of raw) {
+    if (!item.url || !/^https?:\/\//i.test(item.url)) continue;
 
-      let score = typed * 14 + Math.log2(visits + 1) * 10 + recency;
-      if (q) {
-        if (hostLower === q) score += 1100;
-        else if (hostLower.startsWith(q)) score += 900;
-        else if (hostLower.includes(q)) score += 650;
-        if (titleLower.startsWith(q)) score += 500;
-        else if (titleLower.includes(q)) score += 280;
-        if (urlLower.startsWith(q) || urlLower.startsWith(`https://${q}`) || urlLower.startsWith(`http://${q}`)) score += 520;
-        else if (urlLower.includes(q)) score += 180;
-      } else {
-        score += (item.lastVisitTime || 0) / 1e10;
+    let parsed;
+    try { parsed = new URL(item.url); } catch { continue; }
+
+    const host = parsed.hostname.replace(/^www\./i, "");
+    const hostLower = host.toLowerCase();
+    const title = item.title || host || item.url;
+    const titleLower = title.toLowerCase();
+    const urlLower = item.url.toLowerCase();
+    const pathLower = `${parsed.pathname}${parsed.search}`.toLowerCase();
+
+    const typed = item.typedCount || 0;
+    const visits = item.visitCount || 0;
+    const ageHours = Math.max(0, (now - (item.lastVisitTime || 0)) / 3600000);
+    const recency = Math.max(0, 120 - Math.log2(ageHours + 1) * 12);
+
+    // Strongly prefer lexical matches first, then use typed/visit/recency as
+    // tie-breakers. This feels closer to Edge's address-bar behavior than
+    // letting frequently visited but weakly matched pages dominate.
+    let lexical = 0;
+
+    if (hostLower === q) lexical += 2600;
+    else if (hostLower.startsWith(q)) lexical += 2200;
+    else if (hostLower.includes(q)) lexical += 1450;
+
+    if (titleLower === q) lexical += 2100;
+    else if (titleLower.startsWith(q)) lexical += 1700;
+    else if (titleLower.split(/[\s\-–—_|:/.]+/).some(part => part.startsWith(q))) lexical += 1250;
+    else if (titleLower.includes(q)) lexical += 900;
+
+    const strippedUrl = urlLower.replace(/^https?:\/\/(www\.)?/, "");
+    if (strippedUrl === q) lexical += 2500;
+    else if (strippedUrl.startsWith(q)) lexical += 1850;
+    else if (strippedUrl.includes(q)) lexical += 700;
+
+    if (pathLower.startsWith(`/${q}`)) lexical += 500;
+    else if (pathLower.includes(q)) lexical += 220;
+
+    const behavior = Math.min(typed, 80) * 11 + Math.log2(visits + 1) * 20 + recency;
+    const score = lexical * 10 + behavior;
+
+    if (!seenUrls.has(item.url)) {
+      seenUrls.add(item.url);
+      ranked.push({
+        type: "history",
+        url: item.url,
+        title,
+        host,
+        score,
+        lastVisitTime: item.lastVisitTime || 0
+      });
+    }
+
+    // Edge's omnibox often surfaces a matching site's root domain in addition
+    // to a specific page. Add a synthetic origin candidate locally when the
+    // hostname itself matches the typed text.
+    if (hostLower.includes(q)) {
+      const rootUrl = `${parsed.protocol}//${parsed.host}/`;
+      if (!seenUrls.has(rootUrl)) {
+        seenUrls.add(rootUrl);
+        let rootLexical = 0;
+        if (hostLower === q) rootLexical = 2550;
+        else if (hostLower.startsWith(q)) rootLexical = 2050;
+        else rootLexical = 1325;
+
+        ranked.push({
+          type: "history",
+          url: rootUrl,
+          title: host,
+          host,
+          score: rootLexical * 10 + behavior * 0.75,
+          lastVisitTime: item.lastVisitTime || 0
+        });
       }
+    }
+  }
 
-      return { url: item.url, title, host, score, lastVisitTime: item.lastVisitTime || 0 };
-    })
-    .sort((a, b) => q ? b.score - a.score : b.lastVisitTime - a.lastVisitTime)
-    .slice(0, limit);
+  return ranked
+    .sort((a, b) => b.score - a.score || b.lastVisitTime - a.lastVisitTime)
+    .slice(0, Math.max(limit * 3, limit));
+}
+
+function makeSearchSuggestion(query) {
+  const engine = getEngine();
+  const buildSearch = searchUrls[engine] || searchUrls.bing;
+  const engineName = searchEngineNames[engine] || "Bing";
+  return {
+    type: "search",
+    url: buildSearch(query),
+    title: `${query} - ${engineName} 搜索`,
+    subtitle: `使用 ${engineName} 搜索`,
+    host: ""
+  };
+}
+
+async function getCombinedSuggestions(query, limit) {
+  const q = query.trim();
+  if (!q) return [];
+
+  const historyItems = await getHistorySuggestions(q, Math.max(limit, 5));
+  const searchItem = makeSearchSuggestion(q);
+
+  if (!historyItems.length) return [searchItem].slice(0, limit);
+
+  // Similar visual rhythm to the browser omnibox:
+  // strongest direct/history match first, search action second, then other
+  // locally matched history/domain entries.
+  const items = [historyItems[0], searchItem, ...historyItems.slice(1)];
+
+  const seen = new Set();
+  return items.filter(item => {
+    const key = `${item.type}:${item.url}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, limit);
 }
 
 function renderSuggestions(items) {
@@ -758,12 +899,21 @@ function renderSuggestions(items) {
 
     const iconWrap = document.createElement("div");
     iconWrap.className = "suggestion-favicon-wrap";
-    const img = document.createElement("img");
-    img.className = "suggestion-favicon";
-    img.alt = "";
-    img.src = faviconURL(item.url, 32);
-    img.addEventListener("error", () => img.remove());
-    iconWrap.appendChild(img);
+
+    if (item.type === "search") {
+      const searchMark = document.createElement("span");
+      searchMark.className = "suggestion-search-mark";
+      searchMark.textContent = "⌕";
+      searchMark.setAttribute("aria-hidden", "true");
+      iconWrap.appendChild(searchMark);
+    } else {
+      const img = document.createElement("img");
+      img.className = "suggestion-favicon";
+      img.alt = "";
+      img.src = faviconURL(item.url, 32);
+      img.addEventListener("error", () => img.remove());
+      iconWrap.appendChild(img);
+    }
 
     const text = document.createElement("div");
     text.className = "suggestion-text";
@@ -772,7 +922,7 @@ function renderSuggestions(items) {
     title.textContent = item.title;
     const url = document.createElement("div");
     url.className = "suggestion-url";
-    url.textContent = item.url;
+    url.textContent = item.subtitle || item.url;
     text.append(title, url);
 
     row.addEventListener("mousedown", event => event.preventDefault());
@@ -792,9 +942,18 @@ async function refreshSuggestions() {
     return;
   }
 
+  const query = searchInput.value.trim();
+
+  // Do not show recent history merely because the input gained focus.
+  // Suggestions only appear after the user actually starts typing.
+  if (!query) {
+    hideSuggestions();
+    return;
+  }
+
   const serial = ++suggestionQuerySerial;
   try {
-    const items = await getHistorySuggestions(searchInput.value, getHistoryLimit());
+    const items = await getCombinedSuggestions(query, getHistoryLimit());
     if (serial !== suggestionQuerySerial || document.activeElement !== searchInput) return;
     renderSuggestions(items);
   } catch {
@@ -879,6 +1038,8 @@ function getSyncableSettings() {
     paletteIndex: getPaletteIndex(),
     searchWidth: getSearchWidth(),
     searchFocusEffect: getSearchFocusEffect(),
+    layoutMode: getLayoutMode(),
+    showSearch: getShowSearch(),
     historySuggestions: getHistorySuggestionsEnabled(),
     historyLimit: getHistoryLimit()
   };
@@ -956,6 +1117,13 @@ function applySyncableConfig(config) {
 
   if (typeof config.searchFocusEffect === "boolean") {
     localStorage.setItem(STORAGE_KEYS.searchFocusEffect, String(config.searchFocusEffect));
+  }
+
+  if (["standard", "desktop"].includes(config.layoutMode)) {
+    localStorage.setItem(STORAGE_KEYS.layoutMode, config.layoutMode);
+  }
+  if (typeof config.showSearch === "boolean") {
+    localStorage.setItem(STORAGE_KEYS.showSearch, String(config.showSearch));
   }
 
   if (typeof config.historySuggestions === "boolean") {
@@ -1203,6 +1371,8 @@ function getExportConfig() {
     paletteIndex: getPaletteIndex(),
     searchWidth: getSearchWidth(),
     searchFocusEffect: getSearchFocusEffect(),
+    layoutMode: getLayoutMode(),
+    showSearch: getShowSearch(),
     historySuggestions: getHistorySuggestionsEnabled(),
     historyLimit: getHistoryLimit()
   };
@@ -1274,6 +1444,8 @@ async function importBackupFile(file) {
   localStorage.setItem(STORAGE_KEYS.iconSize, "small");
   if (["narrow", "medium", "wide"].includes(config.searchWidth)) localStorage.setItem(STORAGE_KEYS.searchWidth, config.searchWidth);
   if (typeof config.searchFocusEffect === "boolean") localStorage.setItem(STORAGE_KEYS.searchFocusEffect, String(config.searchFocusEffect));
+  if (["standard", "desktop"].includes(config.layoutMode)) localStorage.setItem(STORAGE_KEYS.layoutMode, config.layoutMode);
+  if (typeof config.showSearch === "boolean") localStorage.setItem(STORAGE_KEYS.showSearch, String(config.showSearch));
   if (typeof config.historySuggestions === "boolean") localStorage.setItem(STORAGE_KEYS.historySuggestions, String(config.historySuggestions));
   if ([5, 10, 15, 20].includes(Number(config.historyLimit))) localStorage.setItem(STORAGE_KEYS.historyLimit, String(Number(config.historyLimit)));
 
@@ -1294,6 +1466,8 @@ async function importBackupFile(file) {
 }
 
 settingsButton.addEventListener("click", async () => {
+  layoutMode.value = getLayoutMode();
+  showSearch.checked = getShowSearch();
   searchEngine.value = getEngine();
   autoFocus.checked = getAutoFocus();
   useFavicons.checked = getUseFavicons();
@@ -1307,7 +1481,21 @@ settingsButton.addEventListener("click", async () => {
   await updateHistoryPermissionUi();
   updateColorControls(getBackgroundColor());
   updateSyncUi();
+  updateConditionalSettingsUi();
   settingsDialog.showModal();
+});
+
+layoutMode.addEventListener("change", () => {
+  localStorage.setItem(STORAGE_KEYS.layoutMode, layoutMode.value);
+  applyUiSettings();
+  renderShortcuts();
+  queueSync();
+});
+
+showSearch.addEventListener("change", () => {
+  localStorage.setItem(STORAGE_KEYS.showSearch, String(showSearch.checked));
+  applyUiSettings();
+  queueSync();
 });
 
 searchEngine.addEventListener("change", () => {
@@ -1527,6 +1715,8 @@ resetData.addEventListener("click", async () => {
 
   applyUiSettings();
   renderShortcuts();
+  layoutMode.value = DEFAULTS.layoutMode;
+  showSearch.checked = DEFAULTS.showSearch;
   searchEngine.value = DEFAULTS.engine;
   autoFocus.checked = DEFAULTS.autoFocus;
   useFavicons.checked = DEFAULTS.useFavicons;
@@ -1548,7 +1738,7 @@ applyBackground();
 updateHistoryPermissionUi();
 bootstrapSync();
 
-if (getAutoFocus()) {
+if (isSearchVisible() && getAutoFocus()) {
   // Focus synchronously during initialization instead of using setTimeout().
   // The delayed focus could race with the user's first click on the page:
   // the input could briefly gain focus (showing the caret) and immediately

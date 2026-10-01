@@ -10,7 +10,13 @@
 <body>
   <div id="backgroundLayer" class="background-layer" aria-hidden="true"></div>
 
-  <button id="settingsButton" class="icon-button top-right" type="button" aria-label="设置" title="设置">⚙</button>
+  <button id="settingsButton" class="icon-button top-right" type="button" aria-label="设置" title="设置">
+    <svg class="settings-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 2.75v2.1M12 19.15v2.1M4.75 12h-2.1M21.35 12h-2.1M5.92 5.92 4.44 4.44M19.56 19.56l-1.48-1.48M18.08 5.92l1.48-1.48M4.44 19.56l1.48-1.48" />
+      <circle cx="12" cy="12" r="6.2" />
+      <circle cx="12" cy="12" r="2.55" />
+    </svg>
+  </button>
 
   <main class="page">
     <section class="content" aria-label="新标签页">
@@ -63,6 +69,30 @@
   <dialog id="settingsDialog" class="dialog settings-dialog">
     <form method="dialog">
       <div class="dialog-title">设置</div>
+
+      <section class="settings-section">
+        <div class="section-title">页面布局</div>
+
+        <label>
+          布局模式
+          <select id="layoutMode">
+            <option value="standard">标准模式</option>
+            <option value="desktop">桌面模式</option>
+          </select>
+        </label>
+
+        <div class="setting-help">
+          标准模式将内容放在页面中央；桌面模式会隐藏中间搜索框，并把快捷方式固定在页面底部中央，顺序仍按第一行、第二行、第三行从上到下排列。
+        </div>
+
+        <label id="showSearchRow" class="toggle-row">
+          <span>
+            <strong>显示中间搜索框</strong>
+            <small>关闭后只显示快捷方式，并自动将快捷方式整体居中。桌面模式固定不显示搜索框。</small>
+          </span>
+          <input id="showSearch" type="checkbox" />
+        </label>
+      </section>
 
       <section class="settings-section">
         <div class="section-title">快捷方式</div>
@@ -143,20 +173,22 @@
           </div>
         </div>
 
-        <label class="toggle-row">
-          <span>
-            <strong>搜索框聚焦背景效果</strong>
-            <small>开启后，点击或聚焦搜索框时，图片背景会轻微模糊、变暗并放大；关闭后背景保持不变。</small>
-          </span>
-          <input id="searchFocusEffect" type="checkbox" />
-        </label>
+        <div id="searchFocusEffectGroup">
+          <label class="toggle-row">
+            <span>
+              <strong>搜索框聚焦背景效果</strong>
+              <small>开启后，点击或聚焦搜索框时，图片背景会轻微模糊、变暗并放大；关闭后背景保持不变。</small>
+            </span>
+            <input id="searchFocusEffect" type="checkbox" />
+          </label>
 
-        <div class="setting-help">
-          图片只保存在本机。此效果仅对自定义图片背景生效，默认开启。
+          <div class="setting-help">
+            图片只保存在本机。此效果仅对自定义图片背景生效，默认开启。
+          </div>
         </div>
       </section>
 
-      <section class="settings-section">
+      <section id="searchSettingsSection" class="settings-section">
         <div class="section-title">搜索</div>
 
         <label>
@@ -204,7 +236,7 @@
         </label>
 
         <div class="setting-help">
-          开启后：搜索框为空时显示近期访问；输入文字时优先匹配以前访问或经常手动输入的网址。此功能只查询 Edge 本机浏览历史，不向搜索引擎发送联想请求。
+          开启后：只有在开始输入文字后才显示建议，并优先匹配以前访问或经常手动输入的网址；同时提供当前搜索引擎的搜索入口。此功能只查询 Edge 本机浏览历史，不向搜索引擎发送联想请求。
         </div>
 
         <div class="permission-row">
